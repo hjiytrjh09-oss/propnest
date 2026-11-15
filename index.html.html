@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PropNest</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: sticky header, content-sized search hero, filter bar + card grid, EMI section; details open in a modal. */
+:root {
+  --bg: #f2f5f4;
+  --surface: #ffffff;
+  --surface-2: #e8eeec;
+  --ink: #0f2220;
+  --ink-2: #4a5f5c;
+  --line: #d3ddda;
+  --accent: #0d6b5f;
+  --accent-ink: #ffffff;
+  --accent-soft: #d9eeea;
+  --rent: #3b4a9e;
+  --rent-soft: #e2e5f6;
+  --danger: #b3261e;
+  --shadow: 0 1px 2px rgba(15, 34, 32, .06), 0 8px 24px rgba(15, 34, 32, .07);
+  --font-display: "Bricolage Grotesque", "Inter", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0c1615; --surface: #132220; --surface-2: #1a2e2b; --ink: #e8f1ef; --ink-2: #9bb3af;
+    --line: #26403c; --accent: #4cc3b0; --accent-ink: #06201c; --accent-soft: #17342f;
+    --rent: #a0acf2; --rent-soft: #1e2447; --danger: #ff8a80;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .35);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0c1615; --surface: #132220; --surface-2: #1a2e2b; --ink: #e8f1ef; --ink-2: #9bb3af;
+  --line: #26403c; --accent: #4cc3b0; --accent-ink: #06201c; --accent-soft: #17342f;
+  --rent: #a0acf2; --rent-soft: #1e2447; --danger: #ff8a80;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .35);
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 var(--font-body); }
+[hidden] { display: none !important; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 60; background: var(--surface); }
+a { color: var(--accent); }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+h1, h2, h3 { font-family: var(--font-display); letter-spacing: -.02em; line-height: 1.12; text-wrap: balance; margin: 0; }
+.muted { color: var(--ink-2); }
+.wrap { max-width: 1160px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+/* Header */
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 50; background: var(--surface); border-bottom: 1px solid var(--line); }
+.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 60px; }
+.logo { display: flex; align-items: center; gap: 9px; font: 700 22px/1 var(--font-display); letter-spacing: -.02em; }
+.logo svg { color: var(--accent); }
+.logo span b { color: var(--accent); font-weight: 700; }
+.top nav { display: flex; align-items: center; gap: 4px; }
+.link { border: 0; background: none; padding: 8px 12px; border-radius: 8px; font-weight: 600; cursor: pointer; color: var(--ink-2); }
+.link:hover { background: var(--surface-2); color: var(--ink); }
+.link.saved { color: var(--accent); }
+
+/* Buttons and form controls */
+.btn { border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+.btn:hover { filter: brightness(1.07); }
+.btn.ghost { background: transparent; color: var(--accent); }
+.btn.ghost:hover { background: var(--accent-soft); filter: none; }
+.fld { display: grid; gap: 6px; min-width: 0; }
+.fld > span { font-size: 12px; font-weight: 600; color: var(--ink-2); display: flex; justify-content: space-between; gap: 8px; }
+.fld > span b { color: var(--ink); font-weight: 600; }
+select, input[type=number], input[type=text], input[type=tel], textarea { width: 100%; min-width: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+
+/* Hero */
+.hero { background: var(--surface); border-bottom: 1px solid var(--line); padding-block: 34px 26px; }
+.eyebrow { margin: 0 0 10px; font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+h1 { font-size: clamp(30px, 5.2vw, 50px); font-weight: 700; max-width: 17ch; }
+.lede { max-width: 58ch; color: var(--ink-2); font-size: 17px; margin: 14px 0 22px; }
+.search { display: grid; gap: 14px; }
+.seg { position: relative; display: inline-flex; width: max-content; max-width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 3px; background: var(--surface-2); }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg label { padding: 7px 22px; border-radius: 7px; cursor: pointer; font-weight: 600; color: var(--ink-2); }
+.seg input:checked + label { background: var(--accent); color: var(--accent-ink); }
+.seg input:focus-visible + label { outline: 2px solid var(--accent); outline-offset: 2px; }
+.fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; align-items: end; }
+.note { margin: 2px 0 0; font-size: 13px; color: var(--ink-2); }
+
+/* Listings */
+.listings { padding-block: 32px 12px; scroll-margin-top: 76px; }
+.bar { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 20px; margin-bottom: 18px; }
+.bar h2 { font-size: 26px; }
+.bar .count { margin: 4px 0 0; color: var(--ink-2); }
+.tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.tools select { width: auto; }
+.toggle { border: 1px solid var(--line); background: var(--surface); padding: 9px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+.toggle[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr)); gap: 20px; }
+.card { position: relative; min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); }
+.card-open { display: block; width: 100%; padding: 0; border: 0; background: none; text-align: left; cursor: pointer; }
+.card-open img { display: block; width: 100%; height: auto; aspect-ratio: 5 / 3; object-fit: cover; }
+.card-body { display: block; padding: 14px 16px 16px; }
+.card-body > span { display: block; }
+.price { font: 700 21px/1.2 var(--font-display); color: var(--accent); }
+.price small { font: 500 13px var(--font-body); color: var(--ink-2); }
+.c-title { margin-top: 6px; font-weight: 600; }
+.c-loc { color: var(--ink-2); font-size: 13px; }
+.card-body > .c-specs { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 10px; font-size: 13px; color: var(--ink-2); }
+.tag { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: var(--accent-soft); color: var(--accent); }
+.tag.rent { background: var(--rent-soft); color: var(--rent); }
+.tag.plain { background: var(--surface-2); color: var(--ink-2); }
+.card > .tag { position: absolute; left: 10px; top: 10px; box-shadow: 0 1px 3px rgba(0, 0, 0, .18); }
+.fav { position: absolute; right: 10px; top: 10px; width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: var(--surface); color: var(--ink-2); cursor: pointer; }
+.fav svg path { fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
+.fav[aria-pressed="true"] { color: var(--danger); }
+.fav[aria-pressed="true"] svg path { fill: currentColor; }
+.empty { padding: 36px 16px; text-align: center; background: var(--surface); border: 1px dashed var(--line); border-radius: 12px; }
+.empty p { margin: 0 0 12px; }
+
+/* EMI section */
+.emi-sec { padding-block: 44px 52px; scroll-margin-top: 76px; }
+.emi-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 420px); gap: 32px; align-items: start; }
+.emi-grid h2 { font-size: 30px; margin-bottom: 12px; }
+.formula { display: inline-block; margin: 6px 0 10px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: 14px; max-width: 100%; overflow-x: auto; }
+.panel, .emi { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: grid; gap: 14px; }
+.emi-out { margin: 0; display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
+.emi-out div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.emi-out dt { color: var(--ink-2); }
+.emi-out dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+.emi-out .big dd { font: 700 26px/1.1 var(--font-display); color: var(--accent); }
+
+/* Footer */
+.foot { border-top: 1px solid var(--line); background: var(--surface); padding-block: 22px; font-size: 13px; color: var(--ink-2); }
+
+/* Details modal */
+.overlay { position: fixed; inset: 0; z-index: 100; display: flex; overflow-y: auto; background: rgba(8, 20, 18, .55);
+  padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.sheet { position: relative; width: min(960px, 100%); margin: auto; background: var(--surface); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow); }
+.close { position: absolute; right: 12px; top: 12px; z-index: 2; width: 38px; height: 38px; border: 1px solid var(--line); border-radius: 50%; background: var(--surface); font-size: 22px; line-height: 1; cursor: pointer; }
+.m-art { display: block; width: 100%; height: 220px; object-fit: cover; }
+.m-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 320px); gap: 28px; padding: 24px; }
+.m-main { min-width: 0; display: grid; gap: 12px; align-content: start; }
+.m-main h2 { font-size: 28px; }
+.m-main p { margin: 0; }
+.tags { display: flex; gap: 8px; flex-wrap: wrap; }
+.specs { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+.specs div { padding: 10px 12px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; }
+.specs dt { font-size: 12px; color: var(--ink-2); }
+.specs dd { margin: 2px 0 0; font-weight: 600; }
+.chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.chips li { padding: 4px 12px; border: 1px solid var(--line); border-radius: 999px; font-size: 13px; }
+.m-side { min-width: 0; display: grid; gap: 14px; align-content: start; }
+.m-side h3 { font-size: 16px; }
+.m-price { font: 700 32px/1.1 var(--font-display); color: var(--accent); }
+.m-price small { font: 500 14px var(--font-body); color: var(--ink-2); }
+.enq { display: grid; gap: 10px; }
+.status { margin: 0; font-size: 13px; color: var(--ink-2); }
+
+@media (max-width: 760px) {
+  .emi-grid, .m-grid { grid-template-columns: minmax(0, 1fr); }
+  .m-grid { padding: 18px; }
+  .m-art { height: 160px; }
+  .hide-sm { display: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .card { transition: transform .15s ease, box-shadow .15s ease; }
+  .card:hover { transform: translateY(-2px); }
+}
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <div class="logo">
+      <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.2 12 3l9 8.2V21h-6v-6H9v6H3z" fill="currentColor"/></svg>
+      <span>Prop<b>Nest</b></span>
+    </div>
+    <nav aria-label="Main">
+      <button class="link hide-sm" id="navListings" type="button">Listings</button>
+      <button class="link" id="navEmi" type="button">EMI calculator</button>
+      <button class="link saved" id="navSaved" type="button">Saved (<span class="savedN">0</span>)</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Andhra Pradesh &middot; Telangana</p>
+      <h1>Homes, plots and shops, priced in ₹ and sq ft</h1>
+      <p class="lede">Search sample listings, save the ones you like, and work out the monthly EMI before you call anyone.</p>
+      <form class="search" id="heroSearch">
+        <div class="seg" role="radiogroup" aria-label="Buy or rent">
+          <input type="radio" name="mode" id="modeSale" value="sale" checked><label for="modeSale">Buy</label>
+          <input type="radio" name="mode" id="modeRent" value="rent"><label for="modeRent">Rent</label>
+        </div>
+        <div class="fields">
+          <label class="fld"><span>City</span><select id="fCity"></select></label>
+          <label class="fld"><span>Property type</span>
+            <select id="fType">
+              <option value="">Any type</option><option value="flat">Flat</option><option value="villa">Villa</option>
+              <option value="plot">Plot</option><option value="commercial">Commercial</option>
+            </select></label>
+          <label class="fld"><span>Bedrooms</span>
+            <select id="fBeds">
+              <option value="0">Any</option><option value="1">1+ BHK</option><option value="2">2+ BHK</option>
+              <option value="3">3+ BHK</option><option value="4">4+ BHK</option>
+            </select></label>
+          <label class="fld"><span>Max budget</span><select id="fBudget"></select></label>
+          <button class="btn" type="submit">Show listings</button>
+        </div>
+        <p class="note">All listings on this page are sample data for demonstration.</p>
+      </form>
+    </div>
+  </section>
+
+  <section class="listings" id="listings">
+    <div class="wrap">
+      <div class="bar">
+        <div>
+          <h2>Listings</h2>
+          <p class="count" id="count" aria-live="polite"></p>
+        </div>
+        <div class="tools">
+          <label class="fld">
+            <select id="fSort" aria-label="Sort listings">
+              <option value="new">Newest first</option><option value="low">Price: low to high</option>
+              <option value="high">Price: high to low</option><option value="area">Largest area</option>
+            </select></label>
+          <button class="toggle" id="savedBtn" type="button" aria-pressed="false">Saved only (<span class="savedN">0</span>)</button>
+        </div>
+      </div>
+      <div class="grid" id="grid"></div>
+      <div class="empty" id="empty" hidden>
+        <p>No listings match these filters. Try a higher budget or fewer filters.</p>
+        <button class="btn ghost" id="resetBtn" type="button">Clear filters</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="emi-sec" id="emi">
+    <div class="wrap emi-grid">
+      <div>
+        <h2>Work out the monthly EMI</h2>
+        <p class="muted">Banks in India work out a home-loan EMI from the loan amount (P), the monthly interest rate (r) and the number of monthly instalments (n):</p>
+        <div class="formula">EMI = P &times; r &times; (1+r)<sup>n</sup> &divide; ((1+r)<sup>n</sup> &minus; 1)</div>
+        <p class="muted">Move the sliders and the figures update. The interest rate is only an example, so check your bank's current offer.</p>
+      </div>
+      <div class="panel" id="emiCalc"></div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    PropNest demo with sample listings. The full app, with sign-in, agent dashboard and database, is on
+    <a href="https://github.com/hjiytrjh09-oss/propnest" target="_blank" rel="noopener">GitHub</a>.
+  </div>
+</footer>
+
+<div class="overlay" id="overlay" hidden>
+  <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+    <button class="close" id="mClose" type="button" aria-label="Close details">&times;</button>
+    <div id="mBody"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var LISTINGS = [
+    { id: 1, title: "3 BHK flat in a gated block", city: "Guntur", locality: "Lakshmipuram", type: "flat", mode: "sale", beds: 3, baths: 2, sqft: 1450, price: 6800000,
+      amenities: ["Covered parking", "Lift", "24x7 security", "Power backup"], desc: "Third-floor flat with two balconies and vitrified flooring, a short walk from Lakshmipuram Main Road." },
+    { id: 2, title: "4 BHK independent villa with garden", city: "Vijayawada", locality: "Gunadala", type: "villa", mode: "sale", beds: 4, baths: 4, sqft: 3200, price: 18500000,
+      amenities: ["Garden", "Two car parks", "Borewell", "Solar water heater"], desc: "Ground-plus-one villa on a 300 sq yd plot with a front lawn, a pooja room and a covered terrace." },
+    { id: 3, title: "East-facing residential plot", city: "Guntur", locality: "Amaravati Road", type: "plot", mode: "sale", beds: 0, baths: 0, sqft: 2400, price: 4200000,
+      amenities: ["Gated layout", "40 ft road", "Underground drainage", "Street lights"], desc: "Corner plot of about 267 sq yd in an approved layout, with water and power connections at the boundary." },
+    { id: 4, title: "Corner shop on a main road", city: "Hyderabad", locality: "Kukatpally", type: "commercial", mode: "sale", beds: 0, baths: 1, sqft: 650, price: 9500000,
+      amenities: ["Main-road frontage", "Shutter door", "Power backup", "Parking bay"], desc: "Ground-floor shop with a 14 ft frontage on a busy road. Suits a clinic, pharmacy or small showroom." },
+    { id: 5, title: "2 BHK flat near the IT corridor", city: "Hyderabad", locality: "Kondapur", type: "flat", mode: "rent", beds: 2, baths: 2, sqft: 1100, price: 28000,
+      amenities: ["Lift", "Covered parking", "Gym", "Semi-furnished"], desc: "Semi-furnished flat with wardrobes and modular kitchen, ten minutes from the main office parks." },
+    { id: 6, title: "3 BHK flat in a gated community", city: "Vijayawada", locality: "Benz Circle", type: "flat", mode: "sale", beds: 3, baths: 3, sqft: 1650, price: 7900000,
+      amenities: ["Swimming pool", "Gym", "Clubhouse", "Covered parking"], desc: "Seventh-floor flat facing the road, with a large living room and three attached bathrooms." },
+    { id: 7, title: "3 BHK sea-facing apartment", city: "Visakhapatnam", locality: "Rushikonda", type: "flat", mode: "sale", beds: 3, baths: 3, sqft: 1780, price: 12400000,
+      amenities: ["Sea view", "Lift", "Two car parks", "Power backup"], desc: "Corner apartment on the ninth floor with a balcony that looks towards the beach." },
+    { id: 8, title: "2 BHK flat close to offices", city: "Hyderabad", locality: "Gachibowli", type: "flat", mode: "sale", beds: 2, baths: 2, sqft: 1250, price: 9800000,
+      amenities: ["Lift", "Gym", "Visitor parking", "24x7 security"], desc: "Well-lit flat in a mid-rise block, close to the main road and the metro feeder bus stop." },
+    { id: 9, title: "Duplex villa in a gated layout", city: "Hyderabad", locality: "Miyapur", type: "villa", mode: "sale", beds: 4, baths: 4, sqft: 2850, price: 21500000,
+      amenities: ["Private terrace", "Clubhouse", "Two car parks", "Rainwater harvesting"], desc: "East-facing duplex with a double-height living room and a terrace on the upper floor." },
+    { id: 10, title: "Ready-to-move office space", city: "Visakhapatnam", locality: "MVP Colony", type: "commercial", mode: "rent", beds: 0, baths: 2, sqft: 900, price: 45000,
+      amenities: ["Lift", "Power backup", "Reception area", "Parking"], desc: "First-floor office with two cabins and an open work area, on a road with plenty of parking." },
+    { id: 11, title: "Residential plot in a DTCP layout", city: "Visakhapatnam", locality: "Madhurawada", type: "plot", mode: "sale", beds: 0, baths: 0, sqft: 1800, price: 5400000,
+      amenities: ["DTCP layout", "30 ft road", "Water line", "Avenue trees"], desc: "Regular-shaped plot of 200 sq yd, east-facing, in a layout with roads already laid." },
+    { id: 12, title: "1 BHK flat for a small family", city: "Guntur", locality: "Brodipet", type: "flat", mode: "rent", beds: 1, baths: 1, sqft: 620, price: 9000,
+      amenities: ["Water supply", "Two-wheeler parking", "Balcony"], desc: "Compact first-floor flat in a quiet lane, near shops, a school and the bus route." }
+  ];
+
+  var TYPE_LABEL = { flat: "Flat", villa: "Villa", plot: "Plot", commercial: "Commercial" };
+  var BUDGETS = {
+    sale: [[0, "Any budget"], [5000000, "Up to ₹50 L"], [10000000, "Up to ₹1 Cr"], [20000000, "Up to ₹2 Cr"], [50000000, "Up to ₹5 Cr"]],
+    rent: [[0, "Any budget"], [15000, "Up to ₹15,000"], [30000, "Up to ₹30,000"], [50000, "Up to ₹50,000"], [100000, "Up to ₹1,00,000"]]
+  };
+  var HEART = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>';
+
+  var $ = function (s) { return document.querySelector(s); };
+  var esc = function (s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
+  var inr = function (n) { return "₹" + Math.round(n).toLocaleString("en-IN"); };
+  function fmt(n) {
+    if (n >= 1e7) return "₹" + (n / 1e7).toFixed(2).replace(/\.?0+$/, "") + " Cr";
+    if (n >= 1e5) return "₹" + (n / 1e5).toFixed(1).replace(/\.0$/, "") + " L";
+    return inr(n);
+  }
+  function go(el) {
+    var calm = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.scrollIntoView({ behavior: calm ? "auto" : "smooth", block: "start" });
+  }
+
+  /* ---------- saved listings (per browser) ---------- */
+  var favs = new Set();
+  try { favs = new Set(JSON.parse(localStorage.getItem("propnest_favs") || "[]")); } catch (e) {}
+  function saveFavs() { try { localStorage.setItem("propnest_favs", JSON.stringify(Array.from(favs))); } catch (e) {} }
+
+  /* ---------- illustrations drawn per listing ---------- */
+  var PALS = [
+    { sky1: "#cfe8e3", sky2: "#eef6f3", main: "#2f6f66", alt: "#1d4a44", ground: "#9cc7bc", win: "#f6e7b4" },
+    { sky1: "#d9def5", sky2: "#f2f4fc", main: "#4a5aa8", alt: "#2f3a78", ground: "#aab4e0", win: "#fbeec5" },
+    { sky1: "#e6ebcf", sky2: "#f6f8ea", main: "#6b7a2f", alt: "#47521a", ground: "#c4cf94", win: "#fff3cf" },
+    { sky1: "#dfe6ea", sky2: "#f3f6f8", main: "#5b6f7a", alt: "#394852", ground: "#b5c3ca", win: "#f4e8bd" }
+  ];
+  function wins(x, y, w, h, c, r, f) {
+    var s = "", cw = w / c, ch = h / r, i, j;
+    for (i = 0; i < c; i++) for (j = 0; j < r; j++) {
+      s += '<rect x="' + (x + i * cw + cw * 0.2).toFixed(1) + '" y="' + (y + j * ch + ch * 0.2).toFixed(1) + '" width="' + (cw * 0.55).toFixed(1) + '" height="' + (ch * 0.5).toFixed(1) + '" fill="' + f + '" opacity="' + (((i + j) % 5 === 0) ? 0.35 : 0.95) + '"/>';
+    }
+    return s;
+  }
+  var artCache = {};
+  function art(l) {
+    if (artCache[l.id]) return artCache[l.id];
+    var p = PALS[l.id % PALS.length], g = "", i;
+    var ground = function (y) { return '<rect x="0" y="' + y + '" width="400" height="' + (240 - y) + '" fill="' + p.ground + '"/>'; };
+    if (l.type === "flat") {
+      g += ground(196);
+      g += '<rect x="60" y="62" width="84" height="140" fill="' + p.main + '"/><rect x="150" y="92" width="70" height="110" fill="' + p.alt + '"/><rect x="226" y="48" width="96" height="154" fill="' + p.main + '"/>';
+      g += wins(68, 72, 68, 120, 4, 7, p.win) + wins(158, 100, 54, 94, 3, 5, p.win) + wins(234, 58, 80, 138, 5, 8, p.win);
+    } else if (l.type === "villa") {
+      g += ground(200);
+      g += '<circle cx="56" cy="164" r="22" fill="' + p.alt + '" opacity=".7"/>';
+      g += '<rect x="110" y="110" width="180" height="92" fill="' + p.main + '"/><polygon points="96,112 200,52 304,112" fill="' + p.alt + '"/>';
+      g += '<rect x="186" y="150" width="28" height="52" fill="' + p.alt + '"/><rect x="128" y="130" width="38" height="30" fill="' + p.win + '"/><rect x="234" y="130" width="38" height="30" fill="' + p.win + '"/>';
+      g += '<circle cx="338" cy="156" r="30" fill="' + p.alt + '" opacity=".85"/><rect x="334" y="170" width="8" height="32" fill="' + p.alt + '"/>';
+    } else if (l.type === "plot") {
+      g += ground(120);
+      var pts = "90,215 310,215 275,140 125,140";
+      g += '<polygon points="' + pts + '" fill="' + p.main + '" opacity=".35"/><polygon points="' + pts + '" fill="none" stroke="' + p.alt + '" stroke-width="3" stroke-dasharray="10 7"/>';
+      [[90, 215], [310, 215], [275, 140], [125, 140]].forEach(function (c) { g += '<circle cx="' + c[0] + '" cy="' + c[1] + '" r="6" fill="' + p.alt + '"/>'; });
+      g += '<circle cx="320" cy="50" r="22" fill="' + p.win + '"/>';
+    } else {
+      g += ground(202);
+      g += '<rect x="80" y="80" width="240" height="122" fill="' + p.main + '"/><rect x="70" y="64" width="260" height="28" fill="' + p.alt + '"/>';
+      for (i = 0; i < 10; i++) g += '<rect x="' + (86 + i * 23) + '" y="92" width="23" height="26" fill="' + (i % 2 ? p.win : p.alt) + '"/>';
+      g += '<rect x="100" y="130" width="90" height="72" fill="' + p.win + '" opacity=".9"/><rect x="214" y="130" width="86" height="72" fill="' + p.win + '" opacity=".9"/><rect x="193" y="150" width="18" height="52" fill="' + p.alt + '"/>';
+    }
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240"><defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + p.sky1 + '"/><stop offset="1" stop-color="' + p.sky2 + '"/></linearGradient></defs><rect width="400" height="240" fill="url(#s)"/>' + g + '</svg>';
+    artCache[l.id] = "data:image/svg+xml;utf8," + encodeURIComponent(svg);
+    return artCache[l.id];
+  }
+
+  /* ---------- filters and list ---------- */
+  var state = { mode: "sale", city: "", type: "", beds: 0, budget: 0, sort: "new", saved: false };
+
+  function fillCities() {
+    var seen = {}, cities = [];
+    LISTINGS.forEach(function (l) { if (!seen[l.city]) { seen[l.city] = 1; cities.push(l.city); } });
+    cities.sort();
+    $("#fCity").innerHTML = '<option value="">All cities</option>' + cities.map(function (c) { return "<option>" + esc(c) + "</option>"; }).join("");
+  }
+  function fillBudget() {
+    $("#fBudget").innerHTML = BUDGETS[state.mode].map(function (b) { return '<option value="' + b[0] + '">' + b[1] + "</option>"; }).join("");
+    state.budget = 0;
+  }
+  function perSqft(l) { return l.mode === "rent" ? "₹" + (l.price / l.sqft).toFixed(1) + "/sq ft/mo" : inr(l.price / l.sqft) + "/sq ft"; }
+
+  function card(l) {
+    var rent = l.mode === "rent", saved = favs.has(l.id);
+    return '<article class="card">' +
+      '<button class="card-open" type="button" data-open="' + l.id + '" aria-label="View details: ' + esc(l.title) + '">' +
+      '<img src="' + art(l) + '" alt="" width="400" height="240">' +
+      '<span class="card-body"><span class="price">' + fmt(l.price) + (rent ? " <small>/month</small>" : "") + '</span>' +
+      '<span class="c-title">' + esc(l.title) + '</span>' +
+      '<span class="c-loc">' + esc(l.locality) + ", " + esc(l.city) + '</span>' +
+      '<span class="c-specs">' + (l.beds ? "<span>" + l.beds + " BHK</span>" : "<span>" + TYPE_LABEL[l.type] + "</span>") +
+      "<span>" + l.sqft.toLocaleString("en-IN") + " sq ft</span><span>" + perSqft(l) + "</span></span></span></button>" +
+      '<span class="tag ' + l.mode + '">' + (rent ? "For rent" : "For sale") + "</span>" +
+      '<button class="fav" type="button" data-fav="' + l.id + '" aria-pressed="' + saved + '" aria-label="' + (saved ? "Remove from saved" : "Save listing") + '">' + HEART + "</button></article>";
+  }
+
+  function render() {
+    var rows = LISTINGS.filter(function (l) {
+      return (state.saved || l.mode === state.mode) &&
+        (!state.city || l.city === state.city) &&
+        (!state.type || l.type === state.type) &&
+        l.beds >= state.beds &&
+        (!state.budget || l.price <= state.budget) &&
+        (!state.saved || favs.has(l.id));
+    });
+    var by = {
+      "new": function (a, b) { return b.id - a.id; },
+      low: function (a, b) { return a.price - b.price; },
+      high: function (a, b) { return b.price - a.price; },
+      area: function (a, b) { return b.sqft - a.sqft; }
+    };
+    rows.sort(by[state.sort]);
+    $("#grid").innerHTML = rows.map(card).join("");
+    $("#empty").hidden = rows.length > 0;
+    $("#count").textContent = rows.length + " " + (rows.length === 1 ? "listing" : "listings") + (state.saved ? " saved" : state.mode === "sale" ? " for sale" : " for rent");
+    $("#savedBtn").setAttribute("aria-pressed", String(state.saved));
+    Array.prototype.forEach.call(document.querySelectorAll(".savedN"), function (n) { n.textContent = favs.size; });
+  }
+
+  function toggleFav(id) {
+    if (favs.has(id)) favs.delete(id); else favs.add(id);
+    saveFavs();
+    render();
+    var b = document.querySelector('[data-fav="' + id + '"]');
+    if (b) b.focus();
+  }
+
+  function reset() {
+    state.city = ""; state.type = ""; state.beds = 0; state.budget = 0; state.sort = "new"; state.saved = false;
+    $("#fCity").value = ""; $("#fType").value = ""; $("#fBeds").value = "0"; $("#fSort").value = "new";
+    fillBudget();
+    render();
+  }
+
+  /* ---------- EMI calculator ---------- */
+  function mountEmi(root, base, editable) {
+    var p = root.id;
+    root.innerHTML =
+      (editable ? '<label class="fld"><span>Property price (₹)</span><input id="' + p + '-price" type="number" min="100000" step="50000" value="' + base + '"></label>' : "") +
+      '<label class="fld"><span>Down payment <b id="' + p + '-downV"></b></span><input id="' + p + '-down" type="range" min="0" max="90" step="5" value="20"></label>' +
+      '<label class="fld"><span>Interest rate <b id="' + p + '-rateV"></b></span><input id="' + p + '-rate" type="range" min="6" max="14" step="0.1" value="8.7"></label>' +
+      '<label class="fld"><span>Tenure <b id="' + p + '-yrsV"></b></span><input id="' + p + '-yrs" type="range" min="1" max="30" step="1" value="20"></label>' +
+      '<dl class="emi-out"><div class="big"><dt>Monthly EMI</dt><dd id="' + p + '-emi"></dd></div>' +
+      '<div><dt>Loan amount</dt><dd id="' + p + '-loan"></dd></div>' +
+      '<div><dt>Total interest</dt><dd id="' + p + '-int"></dd></div></dl>';
+    function calc() {
+      var price = editable ? Math.max(0, +$("#" + p + "-price").value || 0) : base;
+      var down = +$("#" + p + "-down").value, rate = +$("#" + p + "-rate").value, yrs = +$("#" + p + "-yrs").value;
+      var loan = price * (1 - down / 100), r = rate / 1200, n = yrs * 12;
+      var emi = r ? loan * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1) : loan / n;
+      $("#" + p + "-downV").textContent = down + "% (" + fmt(price * down / 100) + ")";
+      $("#" + p + "-rateV").textContent = rate.toFixed(1) + "% a year";
+      $("#" + p + "-yrsV").textContent = yrs + (yrs === 1 ? " year" : " years");
+      $("#" + p + "-emi").textContent = inr(emi);
+      $("#" + p + "-loan").textContent = fmt(loan);
+      $("#" + p + "-int").textContent = fmt(Math.max(0, emi * n - loan));
+    }
+    root.addEventListener("input", calc);
+    calc();
+  }
+
+  /* ---------- details modal ---------- */
+  var lastFocus = null;
+  function spec(k, v) { return "<div><dt>" + k + "</dt><dd>" + v + "</dd></div>"; }
+  function detail(l) {
+    var rent = l.mode === "rent";
+    return '<img class="m-art" src="' + art(l) + '" alt="">' +
+      '<div class="m-grid"><div class="m-main">' +
+      '<div class="tags"><span class="tag ' + l.mode + '">' + (rent ? "For rent" : "For sale") + '</span><span class="tag plain">' + TYPE_LABEL[l.type] + "</span></div>" +
+      '<h2 id="mTitle">' + esc(l.title) + "</h2>" +
+      '<p class="muted">' + esc(l.locality) + ", " + esc(l.city) + "</p>" +
+      '<dl class="specs">' + (l.beds ? spec("Bedrooms", l.beds) : "") + (l.baths ? spec("Bathrooms", l.baths) : "") +
+      spec("Area", l.sqft.toLocaleString("en-IN") + " sq ft") + spec(rent ? "Rent per sq ft" : "Price per sq ft", perSqft(l)) + "</dl>" +
+      "<p>" + esc(l.desc) + "</p><h3>Amenities</h3>" +
+      '<ul class="chips">' + l.amenities.map(function (a) { return "<li>" + esc(a) + "</li>"; }).join("") + "</ul></div>" +
+      '<aside class="m-side"><div class="m-price">' + fmt(l.price) + (rent ? " <small>/month</small>" : "") + "</div>" +
+      (rent ? "" : '<h3>Monthly EMI</h3><div class="emi" id="mEmi"></div>') +
+      '<h3>Ask about this property</h3>' +
+      '<form class="enq" id="enq">' +
+      '<label class="fld"><span>Your name</span><input id="enqName" type="text" required autocomplete="name"></label>' +
+      '<label class="fld"><span>Phone</span><input id="enqPhone" type="tel" autocomplete="tel"></label>' +
+      '<label class="fld"><span>Message</span><textarea id="enqMsg" rows="3">Hi, I would like to know more about this property.</textarea></label>' +
+      '<button class="btn" type="submit">Send enquiry</button>' +
+      '<p class="status" id="enqStatus" role="status"></p></form></aside></div>';
+  }
+  function openDetail(id) {
+    var l = LISTINGS.filter(function (x) { return x.id === id; })[0];
+    if (!l) return;
+    lastFocus = document.activeElement;
+    $("#mBody").innerHTML = detail(l);
+    if (l.mode === "sale") mountEmi($("#mEmi"), l.price, false);
+    $("#enq").addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      $("#enqStatus").textContent = "Demo only, so nothing was sent. In the full PropNest app this message goes to the agent's inbox.";
+    });
+    $("#overlay").hidden = false;
+    document.body.style.overflow = "hidden";
+    $("#overlay").scrollTop = 0;
+    $("#mClose").focus();
+  }
+  function closeDetail() {
+    $("#overlay").hidden = true;
+    document.body.style.overflow = "";
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+
+  /* ---------- wiring ---------- */
+  $("#grid").addEventListener("click", function (e) {
+    var f = e.target.closest("[data-fav]");
+    if (f) { toggleFav(+f.getAttribute("data-fav")); return; }
+    var o = e.target.closest("[data-open]");
+    if (o) openDetail(+o.getAttribute("data-open"));
+  });
+  $("#heroSearch").addEventListener("submit", function (e) { e.preventDefault(); go($("#listings")); });
+  $("#fCity").addEventListener("change", function (e) { state.city = e.target.value; render(); });
+  $("#fType").addEventListener("change", function (e) { state.type = e.target.value; render(); });
+  $("#fBeds").addEventListener("change", function (e) { state.beds = +e.target.value; render(); });
+  $("#fBudget").addEventListener("change", function (e) { state.budget = +e.target.value; render(); });
+  $("#fSort").addEventListener("change", function (e) { state.sort = e.target.value; render(); });
+  Array.prototype.forEach.call(document.querySelectorAll('input[name="mode"]'), function (r) {
+    r.addEventListener("change", function () { state.mode = r.value; fillBudget(); render(); });
+  });
+  $("#savedBtn").addEventListener("click", function () { state.saved = !state.saved; render(); });
+  $("#navSaved").addEventListener("click", function () { state.saved = true; render(); go($("#listings")); });
+  $("#navListings").addEventListener("click", function () { go($("#listings")); });
+  $("#navEmi").addEventListener("click", function () { go($("#emi")); });
+  $("#resetBtn").addEventListener("click", reset);
+  $("#mClose").addEventListener("click", closeDetail);
+  $("#overlay").addEventListener("click", function (e) { if (e.target === $("#overlay")) closeDetail(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !$("#overlay").hidden) closeDetail(); });
+
+  fillCities();
+  fillBudget();
+  render();
+  mountEmi($("#emiCalc"), 6500000, true);
+})();
+</script>
+
+</html>
